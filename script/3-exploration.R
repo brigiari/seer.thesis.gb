@@ -22,10 +22,9 @@ result <- restage(data)
 result %>% 
   # select(-where(~all(is.na(.)))) %>%
   filter(!is.na(t_size_mm)) %>% 
-  select(1:2,t_size_mm, derived_eod_2018_t_2018,  81:93) %>% 
+  select(1:2,
+         derived_eod_2018_stage_group_2018,
+         derived_ajcc_stage_group_7th_ed_2010_2015,
+         81:93) %>% 
   View()
 
-
-result %>% 
-  select()
-  

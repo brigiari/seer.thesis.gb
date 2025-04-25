@@ -166,40 +166,79 @@ make_stage <- function(T, N, M, edition = 8) {
 
 
 # ===== 4 Restaging pipeline ==============================================
+## Vectorize `make_stage()` so it can be called row‑wise
+make_stage_vec <- Vectorize(
+  make_stage,
+  vectorize.args = c("T", "N", "M"),
+  SIMPLIFY = TRUE
+)
+
+## Updated `restage()` pipeline
 restage <- function(df) {
   df %>%
+    # blank out only truly missing helper fields
     mutate(across(matches("^(derived_|x7th_|cs_|eod_|_stage_group)"), na_blank)) %>%
-    mutate(t_size_mm = coalesce(size_mm(cs_tumor_size_2004_2015),
-                                size_mm(eod_primary_tumor_2018))) %>%
+    
+    # compute tumor size once
     mutate(
-      T7 = coalesce(uc(derived_ajcc_t_7th_ed_2010_2015),
-                    uc(derived_seer_combined_t_2016_2017),
-                    classify_T7(t_size_mm)),
-      N7 = coalesce(uc(derived_ajcc_n_7th_ed_2010_2015),
-                    uc(derived_seer_combined_n_2016_2017),
-                    map_N(cs_lymph_nodes_2004_2015)),
-      M7 = coalesce(uc(derived_ajcc_m_7th_ed_2010_2015),
-                    uc(derived_seer_combined_m_2016_2017),
-                    map_M8(cs_mets_at_dx_2004_2015)),
-      Stage7 = coalesce(uc(derived_ajcc_stage_group_7th_ed_2010_2015),
-                        uc(x7th_edition_stage_group_recode_2016_2017),
-                        make_stage(uc(T7), uc(N7), uc(M7), edition = 7)),
-      
-      T8 = coalesce(uc(derived_eod_2018_t_2018),
-                    classify_T8(t_size_mm)),
-      N8 = coalesce(uc(derived_eod_2018_n_2018),
-                    map_N(eod_regional_nodes_2018),
-                    map_N(cs_lymph_nodes_2004_2015)),
-      M8 = coalesce(uc(derived_eod_2018_m_2018),
-                    map_M8(eod_mets_2018),
-                    map_M8(cs_mets_at_dx_2004_2015)),
-      Stage8 = coalesce(uc(derived_eod_2018_stage_group_2018),
-                        make_stage(uc(T8), uc(N8), uc(M8), edition = 8)),
-      
+      t_size_mm = coalesce(
+        size_mm(cs_tumor_size_2004_2015),
+        size_mm(eod_primary_tumor_2018)
+      )
+    ) %>%
+    
+    # compute 7th edition TNM and Stage
+    mutate(
+      T7 = coalesce(
+        uc(derived_ajcc_t_7th_ed_2010_2015),
+        uc(derived_seer_combined_t_2016_2017),
+        classify_T7(t_size_mm)
+      ),
+      N7 = coalesce(
+        uc(derived_ajcc_n_7th_ed_2010_2015),
+        uc(derived_seer_combined_n_2016_2017),
+        map_N(cs_lymph_nodes_2004_2015)
+      ),
+      M7 = coalesce(
+        uc(derived_ajcc_m_7th_ed_2010_2015),
+        uc(derived_seer_combined_m_2016_2017),
+        map_M8(cs_mets_at_dx_2004_2015)
+      ),
+      Stage7 = coalesce(
+        uc(derived_ajcc_stage_group_7th_ed_2010_2015),
+        uc(x7th_edition_stage_group_recode_2016_2017),
+        make_stage_vec(uc(T7), uc(N7), uc(M7), edition = 7)
+      )
+    ) %>%
+    
+    # compute 8th edition TNM and Stage
+    mutate(
+      T8 = coalesce(
+        uc(derived_eod_2018_t_2018),
+        classify_T8(t_size_mm)
+      ),
+      N8 = coalesce(
+        uc(derived_eod_2018_n_2018),
+        map_N(eod_regional_nodes_2018),
+        map_N(cs_lymph_nodes_2004_2015)
+      ),
+      M8 = coalesce(
+        uc(derived_eod_2018_m_2018),
+        map_M8(eod_mets_2018),
+        map_M8(cs_mets_at_dx_2004_2015)
+      ),
+      Stage8 = coalesce(
+        uc(derived_eod_2018_stage_group_2018),
+        make_stage_vec(uc(T8), uc(N8), uc(M8), edition = 8)
+      )
+    ) %>%
+    
+    # compute 9th edition TNM and Stage
+    mutate(
       T9 = classify_T9(t_size_mm),
       N9 = classify_N9(map_N(eod_regional_nodes_2018)),
       M9 = map_M9(eod_mets_2018),
-      Stage9 = make_stage(uc(T9), uc(N9), uc(M9), edition = 9)
+      Stage9 = make_stage_vec(uc(T9), uc(N9), uc(M9), edition = 9)
     )
 }
 
