@@ -1,0 +1,110 @@
+---
+title: "SEER-based RSF in Lung Cancer"
+author: "GB"
+date: '`r Sys.Date()`'  
+output:                 
+ html_document:         
+    code_download: true 
+    code_folding: 'hide'
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      error = F, 
+                      warning = F,
+                      comment = "",
+                      message = F)
+gtsummary::theme_gtsummary_compact()
+```
+
+# Background and Rationale
+Lung cancer is the leading cause of cancer‐related mortality worldwide, and non–small cell lung cancer (NSCLC) accounts for approximately 85% of all lung malignancies. Despite advances in imaging, pathology, and therapeutics, survival remains poor for many patients, driven by heterogeneity in tumor biology, stage at diagnosis, and treatment patterns. Large, population-based registries such as SEER (Surveillance, Epidemiology, and End Results) provide a unique opportunity to study real-world outcomes across diverse demographic groups and geographic regions.
+
+
+# Methods
+**Data Source**  
+We used the SEER Research Plus incidence data linked to county-level time-dependent attributes (income, rurality) covering 17 registries and spanning diagnoses from 2000 through 2021, with follow-up through the end of 2022 (SEER November 2023 submission). The “Case Listing” file format provides one record per tumor, capturing detailed demographic, tumor, treatment, and outcome variables as originally collected and derived by SEER.
+
+**Cohort Selection**
+From the complete case listing, we applied the following sequential filters:  
+
+*  Primary tumors only — retained cases marked as “primary by international rules.”  
+
+*  Anatomical site — limited to lung and bronchus (ICD-O-3 site recode “Lung and Bronchus”).  
+
+*  Histologic subtype — included only NSCLC histologies, defined by ICD-O-3 morphology codes for adenocarcinoma (e.g., 8140, 8480), squamous cell carcinoma (e.g., 8070–8075), large-cell carcinoma (8012–8014, 8031–8033, 8046, 8082), and other specified NSCLC variants (8022, 8200, 8240, 8430, 8560, 8562, 8980).  
+
+*  Key data availability — excluded records missing derived AJCC T-stage (7th edition), survival time, or cancer‐specific death status, as well as those with zero months of follow-up. Excluded record where T and N couldn't be assessed.    
+
+
+**Variable Definitions and Recoding**
+Demographics
+Age at diagnosis (years): stripped of text (“years”) and converted to numeric.  
+Sex and Marital status at diagnosis: original SEER categories, with marital status dichotomized to married (including common law) vs. all others.  
+
+Clinical characteristics  
+Diagnostic confirmation: collapsed into “Pathological,” “Clinical,” or “Unknown.”    
+Laterality: coded as side-specified vs. unspecified.  
+AJCC components: derived T (cT), N (cN), M categories extracted from the 7th edition strings; stage groups I–IV collapsed via regular expressions, with occult/unknown set to missing.  
+Tumor size and regional lymph nodes (examined and positive): converted to numeric, with registry codes for unknown or inapplicable mapped to NA.  
+Site-specific CS factors: included factors 1 and 2 for the lung schema (2004–2017).  
+
+Treatment variables  
+Surgery of primary site: categorized as none, tumor destruction, resection, unknown/surgery type unspecified.  
+Regional lymph-node surgery: none, sentinel only, regional removed, regional + sentinel, or unknown.  
+Radiation and Systemic therapy: binary indicators (yes/no).
+
+Outcome  
+Survival time: months from diagnosis to last follow-up or death, numeric.  
+Cancer-specific death (cs_status): binary (1 if death attributable to lung cancer; 0 if alive or died of other causes).
+
+Data Cleaning and Quality Control
+All character columns were converted to factors to facilitate categorical summaries. We removed any remaining rows with missing values in survival time or cancer-specific status. Variables with zero variance or complete missingness were dropped. We verified that no unexpected levels remained (e.g., T0 recoded to missing) and confirmed consistency between related fields (e.g., primary_site vs. primary_site_labeled).
+
+Analytic Overview
+Descriptive statistics
+
+We will present detailed tables of patient demographics, tumor attributes, and treatment patterns, including counts, percentages, and missingness (using gtsummary::tbl_summary).
+
+Survival modeling
+
+Cox proportional hazards models for cancer-specific survival, adjusting for age, sex, stage, histology, treatment modalities, and county-level socioeconomic/rurality covariates.
+
+Assessment of proportional hazards assumptions and potential interactions (e.g., stage by treatment).
+
+
+# Descriptive tables
+Here patients characteristics
+```{r}
+source(here::here("script/2-tesi-data-cleaning.R"))
+source(here::here("script/3-descriptive-tbls.R"))
+```
+
+## Population Characteristics
+```{r}
+tbl_chr
+```
+## Survival Status
+## Population Characteristics
+```{r}
+tbl_survival
+```
+# Random Survival Forest
+Statistical analyses were conducted in R (version 4.x) using the randomForestSRC package to develop a nonparametric ensemble model of cancer‐specific survival. The cleaned cohort (surv) was randomly partitioned into an 80 percent training set and a 20 percent hold-out set, with a fixed seed to ensure reproducibility of the split. Within the training subset, hyperparameter selection for the Random Survival Forest was performed via the tune() function, which evaluated combinations of mtry (number of candidate variables considered at each split) and nodesize (minimum node size) across 200 preliminary trees. Missing values were imputed internally using the forest’s proximity matrix, and the optimal parameter values were chosen to minimize the out-of-bag error rate.
+
+Using the tuned parameters, a final Random Survival Forest comprising 1 000 trees was grown on the full training set. The ensemble was constrained to the optimal mtry, nodesize, and the node‐depth observed during tuning, thereby balancing bias and variance without reliance on proportional‐hazards assumptions. Survival predictions for the independent test set were generated via the model’s predict() method (with the same imputation strategy), yielding subject‐level estimates of the cumulative hazard and survival probabilities over time. Model discrimination was quantified by the concordance index (C-index) on the hold-out sample, while calibration was evaluated through time-dependent Brier scores at one-, three-, and five-year landmarks and the integrated Brier score across the follow-up period. 
+```{r}
+load(here::here("processed/workspace.RData"))
+```
+
+# Session data  
+
+[Session]
+Version=125
+Type=Case Listing
+Database=Incidence - SEER Research Plus Data, 17 Registries, Nov 2023 Sub (2000-2021) - Linked To County Attributes - Time Dependent (1990-2022) Income/Rurality, 1969-2022 Counties  
+
+
+

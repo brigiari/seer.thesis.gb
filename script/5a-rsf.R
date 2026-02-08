@@ -1,0 +1,147 @@
+source(here::here("script/2-tesi-data-cleaning.R"))
+library(randomForestSRC)
+
+# Split into training and testing sets
+seed <- 666  # for reproducibility
+surv_orig <- surv
+surv <- surv[1:1500,]
+# Training del modello -------------------------------------------------
+tune <- randomForestSRC::tune(
+  Surv(survival_months, cs_status) ~ .,
+  data = surv,
+  ntreeTry = 50L,
+  trace = TRUE,
+  na.action = "na.impute",
+  seed = seed
+)
+tune
+
+# $optimal
+# nodesize     mtry 
+# 50       20 
+# 
+# $rf
+# NULL
+# Growing trees --------------------------------------------------
+set.seed(seed)
+rf_1 <- randomForestSRC::rfsrc(
+  Surv(survival_months, cs_status) ~ .,
+  data = surv, 
+  ntree = 100L,
+  na.action = "na.impute",
+  mtry = tune$optimal[["mtry"]],
+  nodesize = tune$optimal[["nodesize"]],
+  nodedepth = tune$rf$nodedepth,
+  importance = "permute",
+  seed = seed,
+  do.trace = TRUE
+)
+
+
+
+# save(list = ls(all.names = TRUE), 
+#      file = here::here("processed/nsclc50_workspace.RData"))
+# load(here::here("processed/nsclc50_workspace.RData"))
+
+
+print(rf_1)
+
+
+# get metrics
+1-get.cindex(rf_1$yvar[,1], rf_1$yvar[,2], rf_1$predicted.oob)
+
+
+obj <- rf_1
+bs.km <- get.brier.survival(obj, cens.mode = "km")$brier.score
+bs.rsf <- get.brier.survival(obj, cens.mode = "rfsrc")$brier.score
+
+## plot the brier score
+plot(bs.km, type = "s", col = 2)
+lines(bs.rsf, type ="s", col = 4)
+legend("bottomright", legend = c("cens.model = km", "cens.model = rfsrc"), fill = c(2,4))
+
+
+
+## here's how to calculate the CRPS for every time point
+trapz <- randomForestSRC:::trapz
+time <- obj$time.interest
+crps.km <- sapply(1:length(time), function(j) {
+  trapz(time[1:j], bs.km[1:j, 2] / diff(range(time[1:j])))
+})
+crps.rsf <- sapply(1:length(time), function(j) {
+  trapz(time[1:j], bs.rsf[1:j, 2] / diff(range(time[1:j])))
+})
+
+## plot CRPS as function of time
+plot(time, crps.km, ylab = "CRPS", type = "s", col = 2)
+lines(time, crps.rsf, type ="s", col = 4)
+legend("bottomright", legend=c("cens.model = km", "cens.model = rfsrc"), fill=c(2,4))
+
+
+
+# var impo
+jk.obj <- subsample(obj, B=2)
+pdf("output/VIMPsur.pdf", width = 15, height = 20)
+par(oma = c(0.5, 10, 0.5, 0.5))
+par(cex.axis = 2.0, cex.lab = 2.0, cex.main = 2.0, mar = c(6.0,17,1,1), mgp = c(4, 1, 0))
+plot(jk.obj, xlab = "Variable Importance (x 100)", cex = 1.2)
+dev.off()
+
+# Prediction ---------------------------------------------------------
+# surv.pred <- predict(rf_1, surv, na.action = "na.impute")
+# print(surv.pred)
+
+
+
+# surv.pred.ran <- predict(rf_1, test, na.action = "na.random")
+# print(surv.pred.ran)
+
+# VIMP ------------------------------------------------------------
+# importance <- predict(rf_1, 
+#                       # get.tree=1:25,
+#                       trace = TRUE,
+#                       importance = TRUE)$importance
+
+
+# this is for CI
+## very small sample size so need largish subratio
+reg.smp.o <- subsample(rf_1 
+                       # B = 25, subratio = .5
+                       )
+## summary of results
+print(reg.smp.o)
+plot.subsample(reg.smp.o)
+
+
+
+
+
+
+
+
+
+library(randomForestSRC)
+library(survival)
+library(kernelshap)
+library(shapviz)
+
+# Continuous Rank Probability Scores
+
+
+
+
+## ------------------------------------------------------------
+## Minimal depth variable selection
+## survival analysis
+## use larger node size which is better for minimal depth
+## ------------------------------------------------------------
+
+# default call corresponds to minimal depth selection
+vs.pbc <- var.select(object = obj)
+topvars <- vs.pbc$topvars
+# the above is equivalent to
+max.subtree(obj)$topvars
+# different levels of conservativeness
+var.select(object = obj, conservative = "low")
+var.select(object = obj, conservative = "medium")
+var.select(object = obj, conservative = "high")
