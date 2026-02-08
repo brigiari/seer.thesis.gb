@@ -4,13 +4,13 @@ Rebuild the analysis from scratch with clean, modular scripts incorporating clin
 
 ## Phase 1: Project Setup
 
-- [ ] **1.1** Create clean directory structure: `script/new/`, `output/figures/`, `output/tables/`
-- [ ] **1.2** Write `script/new/00-setup.R` — load libraries, set seed, set parallelization, define paths
-- [ ] **1.3** Verify `.Renviron` has `RAW_PATH` set correctly
+- [x] **1.1** Create clean directory structure: `script/new/`, `output/figures/`, `output/tables/`
+- [x] **1.2** Write `script/new/00-setup.R` — load libraries, set seed, set parallelization, define paths
+- [x] **1.3** Verify `.Renviron` has `RAW_PATH` set correctly
 
 ## Phase 2: Data Import & Cleaning
 
-- [ ] **2.1** Write `script/new/01-data-import.R` — load raw SEER data from `.RData`
+- [x] **2.1** Write `script/new/01-data-import.R` — load raw SEER data from `.RData`
 - [x] **2.2** Write `script/new/02-cohort-selection.R` — apply all inclusion/exclusion filters:
   - Site recode: Lung and Bronchus
   - Primary site: C34.0–C34.3, C34.9
@@ -54,7 +54,7 @@ Rebuild the analysis from scratch with clean, modular scripts incorporating clin
 
 ## Phase 6: Interpretability
 
-- [ ] **6.1** Write `script/new/11-shap.R` — SHAP values via `kernelshap` (sample ≤1000 rows)
+- [ ] **6.1** Write `script/new/10-shap.R` — SHAP values via `kernelshap` (sample ≤1000 rows)
 - [ ] **6.2** Generate SHAP plots: beeswarm importance, bar importance, waterfall, force
 - [ ] **6.3** Marginal and partial dependence plots for top predictors
 - [ ] **6.4** Minimal depth variable selection as supplementary analysis
