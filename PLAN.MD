@@ -11,7 +11,7 @@ Rebuild the analysis from scratch with clean, modular scripts incorporating clin
 ## Phase 2: Data Import & Cleaning
 
 - [ ] **2.1** Write `script/new/01-data-import.R` — load raw SEER data from `.RData`
-- [ ] **2.2** Write `script/new/02-cohort-selection.R` — apply all inclusion/exclusion filters:
+- [x] **2.2** Write `script/new/02-cohort-selection.R` — apply all inclusion/exclusion filters:
   - Site recode: Lung and Bronchus
   - Primary site: C34.0–C34.3, C34.9
   - Behavior code: Malignant (3)
@@ -21,29 +21,29 @@ Rebuild the analysis from scratch with clean, modular scripts incorporating clin
   - Primary tumors only, age ≥ 18, exclude death-cert/autopsy-only
   - AJCC 7th ed filters (exclude T0, TX, NX, M1, OCCULT, UNK)
   - Drop NAs in staging, survival, event status
-- [ ] **2.3** Write `script/new/03-variable-recoding.R` — recode and engineer features:
+- [x] **2.3** Write `script/new/03-variable-recoding.R` — recode and engineer features:
   - `cs_status` (binary event), `age` (numeric), `surgery`, `systemic_therapy`
   - `marital_status_at_diagnosis` (binary), `household_income` (grouped), `rural_urban`
   - `reg_lymph_surg` (grouped), `regional_nodes_examined/positive` (cleaned)
   - Drop zero-variance and all-NA columns
-- [ ] **2.4** Write `script/new/04-analytic-dataset.R` — select final model variables into `surv` dataset
-- [ ] **2.5** Add flowchart counts: log N at each filtering step for CONSORT-style diagram
+- [x] **2.4** Write `script/new/04-analytic-dataset.R` — select final model variables into `surv` dataset
+- [x] **2.5** Add flowchart counts: log N at each filtering step for CONSORT-style diagram
 
 ## Phase 3: Descriptive Analysis
 
-- [ ] **3.1** Write `script/new/05-descriptive.R` — `gtsummary::tbl_summary()` for full cohort
-- [ ] **3.2** Create surgery-mortality cross-table (MVV comment: 63% mortality bias)
-- [ ] **3.3** Tabulate missingness in pleura invasion variable (MVV comment: 64% unknown)
+- [x] **3.1** Write `script/new/05-descriptive.R` — `gtsummary::tbl_summary()` for full cohort
+- [x] **3.2** Create surgery-mortality cross-table (MVV comment: 63% mortality bias)
+- [x] **3.3** Tabulate missingness in pleura invasion variable (MVV comment: 64% unknown)
 - [ ] **3.4** Explore treatment sequence variables available in SEER (document for limitations)
 
 ## Phase 4: Modeling — Development Sample (~10k)
 
-- [ ] **4.1** Write `script/new/06-sampling.R` — stratified subsample ~10k for development
-- [ ] **4.2** Write `script/new/07-rsf-tune.R` — hyperparameter tuning (`tune()`, 200 trees)
-- [ ] **4.3** Write `script/new/08-rsf-train.R` — train RSF (1000 trees, tuned params, OOB)
-- [ ] **4.4** Write `script/new/09-rsf-vimp.R` — permutation VIMP, variable selection (threshold > 0.001)
-- [ ] **4.5** Refit reduced model with selected variables
-- [ ] **4.6** Write `script/new/10-rsf-metrics.R` — C-index, Brier score, CRPS, error rate plots
+- [x] **4.1** Write `script/new/06-sampling.R` — stratified subsample ~10k for development
+- [x] **4.2** Write `script/new/07-rsf-tune.R` — hyperparameter tuning (`tune()`, 200 trees)
+- [x] **4.3** Write `script/new/08-rsf-train.R` — train RSF (1000 trees, tuned params, OOB)
+- [x] **4.4** Permutation VIMP + variable selection (threshold > 0.001) — in `script/new/08-rsf-train.R`
+- [x] **4.5** Refit reduced model with selected variables — in `script/new/08-rsf-train.R`
+- [x] **4.6** Write `script/new/09-rsf-metrics.R` — C-index, Brier score, CRPS, error rate plots
 
 ## Phase 5: Modeling — Full Dataset
 
