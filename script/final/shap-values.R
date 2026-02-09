@@ -44,7 +44,7 @@ library(tidyverse)
 
 # this is the most comprehensive data (no splitting train/test)
 # load(paste0(Sys.getenv("RAW_PATH"), "/processed/nsclc-shap-2025-08-042025-08-22", ".RData"))
-xvars <- setdiff(colnames(surv), c("survival_months", "cs_status"))
+xvars <- setdiff(colnames(surv), c("survival_months_scaled", "cs_status"))
 
 fit <- rf_1_var
 
@@ -55,7 +55,7 @@ pred_fun <- function(model, data) {
 
 # Sample <=1000 rows from the training data. veteran is small enough to use all
 set.seed(666)
-sample <- sample(1:nrow(surv), size = 100L)
+sample <- sample(seq_len(nrow(surv)), size = 100L)
 X_explain <- surv[sample, xvars]
 sv <- kernelshap(fit, X = X_explain, pred_fun = pred_fun) |>
   shapviz()

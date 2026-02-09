@@ -9,7 +9,7 @@ surv |>
 
 # Training del modello -------------------------------------------------
 tune <- randomForestSRC::tune(
-  Surv(survival_months, cs_status) ~ .,
+  Surv(survival_months_scaled, cs_status) ~ .,
   data = surv,
   ntreeTry = 200L,
   trace = TRUE,
@@ -27,7 +27,7 @@ tune <- randomForestSRC::tune(
 # # Growing trees --------------------------------------------------
 # set.seed(seed)
 rf_1 <- randomForestSRC::rfsrc(
-  Surv(survival_months, cs_status) ~ .,
+  Surv(survival_months_scaled, cs_status) ~ .,
   data = surv,
   ntree = 1000L,
   na.action = "na.impute",
@@ -64,7 +64,7 @@ imp_vec  <- imp_vec[!is.na(imp_vec)]
 imp_vec  <- imp_vec[imp_vec > 0]              
 imp_rank <- sort(imp_vec, decreasing = TRUE)  
 vars <- names(imp_rank[imp_rank > 0.001])
-fml <- reformulate(vars, response = "Surv(survival_months, cs_status)") 
+fml <- reformulate(vars, response = "Surv(survival_months_scaled, cs_status)") 
 
 
 # set.seed(seed)
@@ -128,10 +128,10 @@ legend("bottomright", legend = c("cens.model = km", "cens.model = rfsrc"), fill 
 ## here's how to calculate the CRPS for every time point
 trapz <- randomForestSRC:::trapz
 time <- obj$time.interest
-crps.km <- sapply(1:length(time), function(j) {
+crps.km <- sapply(seq_along(time), function(j) {
   trapz(time[1:j], bs.km[1:j, 2] / diff(range(time[1:j])))
 })
-crps.rsf <- sapply(1:length(time), function(j) {
+crps.rsf <- sapply(seq_along(time), function(j) {
   trapz(time[1:j], bs.rsf[1:j, 2] / diff(range(time[1:j])))
 })
 
@@ -257,9 +257,9 @@ set.seed(666)
 surv.cc <- surv |> 
   na.omit()
 
-trn.pt.cc <- sample(1:nrow(surv.cc), size = nrow(surv.cc)*0.7)
+trn.pt.cc <- sample(seq_len(nrow(surv.cc)), size = nrow(surv.cc)*0.7)
 trn.cc <- surv.cc[trn.pt.cc, ]
-tst.cc <- surv.cc[setdiff(1:nrow(surv.cc), trn.pt.cc), ]
+tst.cc <- surv.cc[setdiff(seq_len(nrow(surv.cc)), trn.pt.cc), ]
 
 
 # Split into training and testing sets
@@ -267,7 +267,7 @@ seed <- 666  # for reproducibility
 
 # Training del modello -------------------------------------------------
 tune.cc <- randomForestSRC::tune(
-  Surv(survival_months, cs_status) ~ .,
+  Surv(survival_months_scaled, cs_status) ~ .,
   data = trn.cc,
   ntreeTry = 200L,
   trace = TRUE,
@@ -285,13 +285,13 @@ tune.cc <- randomForestSRC::tune(
 # Growing trees --------------------------------------------------
 set.seed(seed)
 rf.cc <- randomForestSRC::rfsrc(
-  Surv(survival_months, cs_status) ~ .,
+  Surv(survival_months_scaled, cs_status) ~ .,
   data = trn.cc, 
   ntree = 1000L,
   na.action = "na.impute",
-  mtry = tune$optimal[["mtry"]],
-  nodesize = tune$optimal[["nodesize"]],
-  nodedepth = tune$rf$nodedepth,
+  mtry = tune.cc$optimal[["mtry"]],
+  nodesize = tune.cc$optimal[["nodesize"]],
+  nodedepth = tune.cc$rf$nodedepth,
   importance = "permute",
   seed = seed,
   save.memory = TRUE,
