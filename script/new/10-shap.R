@@ -27,13 +27,21 @@ fit <- rf_reduced
 xvars <- fit$xvar.names
 sample_size <- min(1000L, nrow(surv_dev))
 row_ids <- sample(seq_len(nrow(surv_dev)), size = sample_size)
-X_explain <- surv_dev[row_ids, xvars]
+X_explain <- as.data.frame(surv_dev[row_ids, xvars])
+
+bg_size <- min(200L, nrow(surv_dev))
+bg_ids <- sample(seq_len(nrow(surv_dev)), size = bg_size)
+X_bg <- as.data.frame(surv_dev[bg_ids, xvars])
 
 pred_fun <- function(model, data) {
-  predict(model, data)$predicted
+  pred <- predict(model, data, na.action = "na.impute")$predicted
+  if (is.matrix(pred) || is.array(pred)) {
+    pred <- pred[, dim(pred)[2]]
+  }
+  as.numeric(pred)
 }
 
-sv <- kernelshap(fit, X = X_explain, pred_fun = pred_fun) |>
+sv <- kernelshap(fit, X = X_explain, bg_X = X_bg, pred_fun = pred_fun) |>
   shapviz()
 
 shap_path <- file.path(raw_path, "processed", "rsf-shap-dev.RData")
